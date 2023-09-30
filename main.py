@@ -35,6 +35,16 @@ async def ask_question(message: types.Message):
     # Отправка ответа пользователю
     await message.reply("Мой ответ: " + response)
 
+# Функция-хендлер которая будет дублировать сообщение
+@dp.message_handler(commands=['repeat'])
+async def ask_question(message: types.Message):
+    # Получаем вопрос от пользователя
+    user_input = message.text.replace("/repeat ", "")
+    
+    # Отправка ответа пользователю
+    await message.reply(user_input)
+
+
 # Запускаем бота
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
