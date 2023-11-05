@@ -1,11 +1,16 @@
-import aiogram
-from aiogram import Bot, types
-from aiogram.dispatcher import Dispatcher
-from aiogram.utils import executor
+import logging
+import aiogram.utils.markdown as md
+from aiogram import Bot, Dispatcher, types
+from aiogram.contrib.middlewares.logging import LoggingMiddleware
+from aiogram.types import ParseMode
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters import Text
+from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram import executor
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
 import openai
 from dotenv import load_dotenv
 import os
-from aiogram.types import InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 # Загрузите переменные окружения из файла .env
 load_dotenv()
@@ -28,8 +33,17 @@ def communicate_with_gpt3(prompt):
     return response['choices'][0]['text'].strip()
 
 # Создаем экземпляр бота и диспетчера
+storage = MemoryStorage()
 bot = Bot(token=BOT_TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher(bot, storage=storage)
+
+logging.basicConfig(level=logging.INFO)
+
+# Определение состояний бота
+class Form(StatesGroup):
+    choose_type = State()  # Состояние выбора типа (доклад или эссе)
+    enter_word_count = State()  # Состояние ввода количества слов
+    enter_topic = State()  # Состояние ввода темы
 
 # Функция-хендлер для обработки команды /ask
 @dp.message_handler(commands=['ask'])
@@ -54,27 +68,79 @@ async def ask_question(message: types.Message):
 
 @dp.message_handler(commands=['document'])
 async def check_requirements_for_doc(message:types.Message):
-    
-    doklad = KeyboardButton(text = 'доклад')
-    essay = KeyboardButton(text = 'эссе')
+    await Form.choose_type.set()
 
-    kb_choose_item = ReplyKeyboardMarkup(resize_keyboard =True).add(doklad,essay)
-    await message.answer('Выберите , что вы хотите сгенерировать? Можно доклад или эссе ',reply_markup=kb_choose_item)
-    k_word_100 = KeyboardButton(text = '100 слов')
-    k_word_500 = KeyboardButton(text = '500 слов')
-    k_word_1000 = KeyboardButton(text = '1000 слов')
-    k_word_5000 = KeyboardButton(text = '5000 слов')
-    kb_choose_count_word = ReplyKeyboardMarkup(resize_keyboard =True).add(k_word_100,k_word_500,
-                                                                          k_word_1000,k_word_5000)
-    
-    
-    await message.answer('Выберите количество слов ',reply_markup=kb_choose_count_word)
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
+    item1 = types.KeyboardButton("Доклад")
+    item2 = types.KeyboardButton("Эссе")
 
+    markup.add(item1, item2)
 
+    await message.reply("Выберите, что вы хотите сгенерировать? Можно доклад или эссе.", reply_markup=markup)
 
+@dp.message_handler(lambda message: message.text not in ["Доклад", "Эссе"], state=Form.choose_type)
+async def process_choose_type_invalid(message: types.Message):
+    """
+    Обработчик, если пользователь выбрал неверный тип
+    """
+    return await message.reply("Пожалуйста, используйте клавиатуру для выбора типа!")
 
+@dp.message_handler(lambda message: message.text in ["Доклад", "Эссе"], state=Form.choose_type)
+async def process_choose_type(message: types.Message, state: FSMContext):
+    """
+    Обработчик выбора типа (доклад или эссе)
+    """
+    async with state.proxy() as data:
+        data['type'] = message.text
 
+    # Переходим к следующему состоянию - "enter_word_count"
+    await Form.enter_word_count.set()
 
+    await message.reply("Сколько слов будет? (Введите число)")
+
+@dp.message_handler(lambda message: not message.text.isdigit(), state=Form.enter_word_count)
+async def process_enter_word_count_invalid(message: types.Message):
+    """
+    Обработчик, если пользователь ввел некорректное количество слов
+    """
+    return await message.reply("Пожалуйста, введите корректное число слов (только цифры)!")
+
+@dp.message_handler(lambda message: message.text.isdigit(), state=Form.enter_word_count)
+async def process_enter_word_count(message: types.Message, state: FSMContext):
+    """
+    Обработчик ввода количества слов
+    """
+    async with state.proxy() as data:
+        data['word_count'] = int(message.text)
+
+    # Переходим к следующему состоянию - "enter_topic"
+    await Form.enter_topic.set()
+
+    await message.reply("Введите тему для доклада:")
+
+@dp.message_handler(lambda message: len(message.text) < 3, state=Form.enter_topic)
+async def process_enter_topic_invalid(message: types.Message):
+    """
+    Обработчик, если пользователь ввел некорректную тему
+    """
+    return await message.reply("Пожалуйста, введите более длинную тему.")
+
+@dp.message_handler(lambda message: len(message.text) >= 3, state=Form.enter_topic)
+async def process_enter_topic(message: types.Message, state: FSMContext):
+    """
+    Обработчик ввода темы
+    """
+    async with state.proxy() as data:
+        data['topic'] = message.text
+
+        # Определяем текст ответа
+        response_text = f"Вы выбрали сгенерировать {data['type']} на тему '{data['topic']}'. Количество слов = {data['word_count']}."
+
+    # Отправляем ответ
+    await message.reply(response_text, reply_markup=types.ReplyKeyboardRemove())
+
+    # Сбрасываем состояние
+    await state.finish()
 
 
 # Запускаем бота
