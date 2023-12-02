@@ -48,10 +48,10 @@ async def process_enter_topic(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['topic'] = message.text
         response_text = f"Вы выбрали сгенерировать {data['type']} на тему '{data['topic']}'. Количество слов = {data['word_count']}."
-        prompt = f'Помоги мне написать {data['type']}. Тема: {data['topic']}, Количество слов = {data['word_count']} '
+        prompt = f"Помоги мне написать {data['type']}. Тема: {data['topic']}, Количество слов = {data['word_count']} "
         response = communicate_with_gpt3(prompt) ### здесь будет готовый ответ от чатгпт
     await message.reply(response_text, reply_markup=types.ReplyKeyboardRemove())
-    #await message.reply(response, reply_markup=types.ReplyKeyboardRemove())
+    await message.reply(response)
 
     await state.finish()
 

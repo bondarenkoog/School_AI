@@ -10,16 +10,18 @@ def setup_gpt3():
     # Проверка наличия токена OpenAI
     if not OPENAI_TOKEN:
         raise ValueError("No OPENAI_TOKEN provided in .env file")
-
+    
     # Установите свой ключ API OpenAI здесь
     openai.api_key = OPENAI_TOKEN
+    print('token',openai.api_key)
 
 def communicate_with_gpt3(prompt):
-    response = openai.Completion.create(
-        engine="text-davinci-002",
-        prompt=prompt,
-        max_tokens=150,
-        stop=None,
-        temperature=0.7,
-    )
-    return response['choices'][0]['text'].strip()
+    response = openai.ChatCompletion.create(
+        model='gpt-4',
+        messages=[
+        {"role": "system", "content": "Hello"},
+        {"role": "user", "content": prompt},
+    ]
+)
+    return response['choices'][0]['message']['content']
+    
