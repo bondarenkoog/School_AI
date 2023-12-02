@@ -49,6 +49,7 @@ async def process_enter_topic(message: types.Message, state: FSMContext):
         data['topic'] = message.text
         response_text = f"Вы выбрали сгенерировать {data['type']} на тему '{data['topic']}'. Количество слов = {data['word_count']}."
         prompt = f"Помоги мне написать {data['type']}. Тема: {data['topic']}, Количество слов = {data['word_count']} "
+        await message.answer('Ваши параметры приняты. Генерация может занять от 1 до 5 минут, пожалуйста подожите...')
         response = communicate_with_gpt3(prompt) ### здесь будет готовый ответ от чатгпт
     await message.reply(response_text, reply_markup=types.ReplyKeyboardRemove())
     await message.reply(response)

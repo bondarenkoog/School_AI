@@ -13,11 +13,10 @@ def setup_gpt3():
     
     # Установите свой ключ API OpenAI здесь
     openai.api_key = OPENAI_TOKEN
-    print('token',openai.api_key)
 
 def communicate_with_gpt3(prompt):
     response = openai.ChatCompletion.create(
-        model='gpt-4',
+        model='gpt-3.5-turbo',
         messages=[
         {"role": "system", "content": "Hello"},
         {"role": "user", "content": prompt},
