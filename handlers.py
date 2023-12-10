@@ -2,6 +2,7 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from gpt3_communication import communicate_with_gpt3
+import logging
 
 class Form(StatesGroup):
     choose_type = State()
@@ -22,6 +23,7 @@ async def check_requirements_for_doc(message: types.Message):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
     markup.add(types.KeyboardButton("Доклад"), types.KeyboardButton("Эссе"))
     await message.reply("Выберите, что вы хотите сгенерировать? Можно доклад или эссе.", reply_markup=markup)
+    logging.info(f'Пользователь {message["from"]["first_name"]} находится в состоянии выбора кнопки ')
 
 async def process_choose_type_invalid(message: types.Message):
     return await message.reply("Пожалуйста, используйте клавиатуру для выбора типа!")
