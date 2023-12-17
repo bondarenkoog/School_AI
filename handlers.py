@@ -9,6 +9,21 @@ class Form(StatesGroup):
     enter_word_count = State()
     enter_topic = State()
 
+async def start_handler(message: types.Message):
+    help_message = (
+        "Доступные команды:\n"
+        "/start - Информация о боте и его возможностях.\n"
+        "/document - Сгенерировать доклад или эссе.\n"
+    )
+    instructions_message = (
+        "Инструкция по использованию команды /document:\n"
+        "1. Выберите команду /document.\n"
+        "2. Следуйте указаниям бота для создания доклада/эссе."
+    )
+    await message.answer(help_message)
+    await message.answer(instructions_message)
+
+
 async def ask_question(message: types.Message):
     user_input = message.text.replace("/ask ", "")
     response = communicate_with_gpt3(user_input)
@@ -52,9 +67,14 @@ async def process_enter_topic(message: types.Message, state: FSMContext):
         response_text = f"Вы выбрали сгенерировать {data['type']} на тему '{data['topic']}'. Количество слов = {data['word_count']}."
         prompt = f"Помоги мне написать {data['type']}. Тема: {data['topic']}, Количество слов = {data['word_count']} "
         await message.answer('Ваши параметры приняты. Генерация может занять от 1 до 5 минут, пожалуйста подожите...')
-        response = communicate_with_gpt3(prompt) ### здесь будет готовый ответ от чатгпт
-    await message.reply(response_text, reply_markup=types.ReplyKeyboardRemove())
-    await message.reply(response)
+        try:
+            response = communicate_with_gpt3(prompt) ### здесь будет готовый ответ от чатгпт
+            await message.reply(response_text, reply_markup=types.ReplyKeyboardRemove())
+            await message.reply(response)
+        except Exception as e:
+            await message.answer(f"ошибка генерации.",reply_markup=types.ReplyKeyboardRemove())
+            
+    
 
     await state.finish()
 
@@ -68,4 +88,5 @@ def setup_handlers(dp):
     dp.message_handler(lambda message: message.text.isdigit(), state=Form.enter_word_count)(process_enter_word_count)
     dp.message_handler(lambda message: len(message.text) < 3, state=Form.enter_topic)(process_enter_topic_invalid)
     dp.message_handler(lambda message: len(message.text) >= 3, state=Form.enter_topic)(process_enter_topic)
+    dp.message_handler(commands=['start'])(start_handler)
 
