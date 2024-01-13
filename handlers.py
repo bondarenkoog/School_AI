@@ -37,7 +37,7 @@ async def check_requirements_for_doc(message: types.Message):
     await Form.choose_type.set()
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
     markup.add(types.KeyboardButton("Доклад"), types.KeyboardButton("Сочинение"))
-    await message.reply("Выберите, что вы хотите сгенерировать? Можно доклад или эссе.", reply_markup=markup)
+    await message.reply("Выберите, что вы хотите сгенерировать? Можно доклад или сочинение.", reply_markup=markup)
     
 
 async def process_choose_type_invalid(message: types.Message):
