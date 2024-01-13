@@ -13,12 +13,12 @@ async def start_handler(message: types.Message):
     help_message = (
         "Доступные команды:\n"
         "/start - Информация о боте и его возможностях.\n"
-        "/document - Сгенерировать доклад или эссе.\n"
+        "/document - Сгенерировать доклад или сочинение.\n"
     )
     instructions_message = (
         "Инструкция по использованию команды /document:\n"
         "1. Выберите команду /document.\n"
-        "2. Следуйте указаниям бота для создания доклада/эссе."
+        "2. Следуйте указаниям бота для создания доклада/сочинения."
     )
     await message.answer(help_message)
     await message.answer(instructions_message)
@@ -36,7 +36,7 @@ async def repeat_message(message: types.Message):
 async def check_requirements_for_doc(message: types.Message):
     await Form.choose_type.set()
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, selective=True)
-    markup.add(types.KeyboardButton("Доклад"), types.KeyboardButton("Эссе"))
+    markup.add(types.KeyboardButton("Доклад"), types.KeyboardButton("Сочинение"))
     await message.reply("Выберите, что вы хотите сгенерировать? Можно доклад или эссе.", reply_markup=markup)
     
 
@@ -88,9 +88,9 @@ async def process_enter_topic(message: types.Message, state: FSMContext):
 def setup_handlers(dp):
     dp.message_handler(commands=['ask'])(ask_question)
     dp.message_handler(commands=['repeat'])(repeat_message)
-    dp.message_handler(commands=['document'])(check_requirements_for_doc)
-    dp.message_handler(lambda message: message.text not in ["Доклад", "Эссе"], state=Form.choose_type)(process_choose_type_invalid)
-    dp.message_handler(lambda message: message.text in ["Доклад", "Эссе"], state=Form.choose_type)(process_choose_type)
+    dp.message_handler(commands=['doc'])(check_requirements_for_doc)
+    dp.message_handler(lambda message: message.text not in ["Доклад", "Сочинение"], state=Form.choose_type)(process_choose_type_invalid)
+    dp.message_handler(lambda message: message.text in ["Доклад", "Сочинение"], state=Form.choose_type)(process_choose_type)
     dp.message_handler(lambda message: not message.text.isdigit(), state=Form.enter_word_count)(process_enter_word_count_invalid)
     dp.message_handler(lambda message: (message.text.isdigit()) and (int(message.text)<50), state=Form.enter_word_count)(process_token_amount_invalid) # проверка больше 50
     dp.message_handler(lambda message: message.text.isdigit(), state=Form.enter_word_count)(process_enter_word_count)
