@@ -1,0 +1,51 @@
+# Файлы и директории Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+pip-log.txt
+pip-delete-this-directory.txt
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Файлы и директории Java
+*.class
+*.jar
+*.war
+*.ear
+*.jmod
+hs_err_pid*
+
+# Исключения для сборочных систем Java
+target/
+out/
+build/
+classes/
+*.log
+
+# Файлы VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Системные файлы
+.DS_Store
+Thumbs.db
