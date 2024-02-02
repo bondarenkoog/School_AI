@@ -13,7 +13,7 @@ def setup_gpt3():
     
     # Установите свой ключ API OpenAI здесь
     openai.api_key = OPENAI_TOKEN
-
+    
 def communicate_with_gpt3(prompt):
     response = openai.ChatCompletion.create(
         model='gpt-3.5-turbo',

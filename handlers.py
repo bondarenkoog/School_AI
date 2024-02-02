@@ -2,7 +2,9 @@ from aiogram import types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from gpt3_communication import communicate_with_gpt3
+from dotenv import load_dotenv
 import logging
+import os
 
 class Form(StatesGroup):
     choose_type = State()
@@ -11,6 +13,7 @@ class Form(StatesGroup):
 
 async def start_handler(message: types.Message):
     help_message = (
+        "Бот School AI генерирует доклады и сочинения на заданную пользователем тему.\n"
         "Доступные команды:\n"
         "/start - Информация о боте и его возможностях.\n"
         "/doc - Сгенерировать доклад или сочинение.\n"
@@ -41,7 +44,7 @@ async def check_requirements_for_doc(message: types.Message):
     
 
 async def process_choose_type_invalid(message: types.Message):
-    return await message.reply("Пожалуйста, используйте клавиатуру для выбора типа!")
+    return await message.reply("Пожалуйста, используйте клавиатуру для выбора типа! При проблеме введите 'Доклад' или 'Сочинение' самостоятельно.")
 
 async def process_choose_type(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
@@ -53,13 +56,13 @@ async def process_enter_word_count_invalid(message: types.Message):
     return await message.reply("Пожалуйста, введите корректное число слов (только цифры)!")
 
 async def process_token_amount_invalid(message: types.Message):
-    return await message.reply("Пожалуйста, введите число больше 50")
+    return await message.reply("Пожалуйста, введите число больше 100")
 
 async def process_enter_word_count(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['word_count'] = int(message.text)
     await Form.enter_topic.set()
-    await message.reply("Введите тему для доклада:")
+    await message.reply("Введите тему для доклада/сочинения:")
 
 async def process_enter_topic_invalid(message: types.Message):
     return await message.reply("Пожалуйста, введите более длинную тему.")
@@ -69,8 +72,11 @@ async def process_enter_topic(message: types.Message, state: FSMContext):
         is_generated = True
         data['topic'] = message.text
         response_text = f"Вы выбрали сгенерировать {data['type']} на тему '{data['topic']}'. Количество слов = {data['word_count']}."
-        prompt = f"Помоги мне написать {data['type']}. Тема: {data['topic']}, Количество слов = {data['word_count']} "
-        
+        load_dotenv()
+        prompt = os.getenv("PROMPT")
+        prompt = prompt.replace("data_type", str(data['type']))
+        prompt = prompt.replace("topic", str(data['topic']))
+        prompt = prompt.replace("n", str(data['word_count']))
         await message.answer('Ваши параметры приняты. Генерация может занять от 1 до 5 минут, пожалуйста подожите...')
         try:
             response = communicate_with_gpt3(prompt) ### здесь будет готовый ответ от чатгпт
@@ -80,9 +86,8 @@ async def process_enter_topic(message: types.Message, state: FSMContext):
             await message.answer(f"ошибка генерации.",reply_markup=types.ReplyKeyboardRemove())
             is_generated = False
         logging.info(f'Generate params:\n{data}\nGenerating status={is_generated} ')
-            
     
-
+    
     await state.finish()
 
 def setup_handlers(dp):
@@ -92,9 +97,8 @@ def setup_handlers(dp):
     dp.message_handler(lambda message: message.text not in ["Доклад", "Сочинение"], state=Form.choose_type)(process_choose_type_invalid)
     dp.message_handler(lambda message: message.text in ["Доклад", "Сочинение"], state=Form.choose_type)(process_choose_type)
     dp.message_handler(lambda message: not message.text.isdigit(), state=Form.enter_word_count)(process_enter_word_count_invalid)
-    dp.message_handler(lambda message: (message.text.isdigit()) and (int(message.text)<50), state=Form.enter_word_count)(process_token_amount_invalid) # проверка больше 50
+    dp.message_handler(lambda message: (message.text.isdigit()) and (int(message.text)<100), state=Form.enter_word_count)(process_token_amount_invalid) # проверка больше 50
     dp.message_handler(lambda message: message.text.isdigit(), state=Form.enter_word_count)(process_enter_word_count)
     dp.message_handler(lambda message: len(message.text) < 5, state=Form.enter_topic)(process_enter_topic_invalid)
     dp.message_handler(lambda message: len(message.text) >= 5, state=Form.enter_topic)(process_enter_topic)
     dp.message_handler(commands=['start'])(start_handler)
-
